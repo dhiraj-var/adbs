@@ -37,7 +37,7 @@ This library is the second version of the original `ADBS` project. It is a **dro
 | Calendar | From | To |
 |---|---|---|
 | Bikram Sambat (BS) | 1970 Baisakh 1 | 2100 Chaitra 30 |
-| Gregorian (AD) | April 13, 1913 | April 14, 2043 |
+| Gregorian (AD) | April 13, 1913 | April 12, 2044 |
 
 Dates outside this range will throw a `DateRangeNotSupported` exception with a clear message telling you the valid range.
 
@@ -338,7 +338,8 @@ Find the line for that year, update the number in the relevant column, then rebu
 
 - Lines starting with `#` are comments and are ignored
 - Blank lines are ignored
-- The file must be in order (year 1970 first, 2100 last) — the library reads it by year number, not by line order, so gaps are fine but all years in the supported range should be present
+- Line order does not matter — the library indexes data by year number, not by position in the file
+- All years from 1970 to 2100 must be present; the library will refuse to start if any year is missing
 - The typical number of days per Nepali month is 29–32
 
 ---
@@ -360,7 +361,7 @@ Find the line for that year, update the number in the relevant column, then rebu
 - **Android** — not tested or configured for Android; Android uses a different Java runtime (ART)
 - **Java versions below 17** — the library uses Java 17 language features and APIs
 - **Dates before BS 1970 (April 13, 1913 AD)** — no calendar data exists for earlier years; the library will throw an exception
-- **Dates after BS 2100 (April 14, 2043 AD)** — same reason; extend by adding rows to `nepali_dates.csv`
+- **Dates after BS 2100 (April 12, 2044 AD)** — same reason; extend by adding rows to `nepali_dates.csv`
 - **As a standalone REST API** — the library has no built-in HTTP server or endpoints; it is a dependency to be embedded in your own project. (If you need a standalone API, wrap it in a Spring Boot `@RestController` in your own project)
 - **Non-Maven/Gradle projects** — there is no published package on Maven Central; you must build and install the JAR locally as described above
 

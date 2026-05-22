@@ -25,6 +25,10 @@ public class NDC {
      * @return Bikram Sambat date in {@code yyyy/MM/dd} format (e.g. {@code "2083/01/01"})
      */
     public String adToBs(String adDate) {
+        if (adDate == null) {
+            throw new InvalidDateFormatException(
+                    "Invalid English date: null. Please use the format YYYY-MM-DD (example: 2026-04-14).");
+        }
         if (!AD_PATTERN.matcher(adDate).matches()) {
             throw new InvalidDateFormatException(
                     "Invalid English date: '" + adDate + "'. " +
@@ -47,6 +51,10 @@ public class NDC {
      * @return Gregorian date in {@code yyyy-MM-dd} format (e.g. {@code "2026-04-14"})
      */
     public String bsToAd(String bsDate) {
+        if (bsDate == null) {
+            throw new InvalidDateFormatException(
+                    "Invalid Nepali date: null. Please use the format YYYY/MM/DD (example: 2083/01/15).");
+        }
         if (!BS_PATTERN.matcher(bsDate).matches()) {
             throw new InvalidDateFormatException(
                     "Invalid Nepali date: '" + bsDate + "'. " +
@@ -57,12 +65,25 @@ public class NDC {
         int monthBs = Integer.parseInt(parts[1]);
         int dayBs   = Integer.parseInt(parts[2]);
 
+        // Month is checked first: the original API threw DateRangeNotSupported here,
+        // so that exception type is preserved for backward compatibility.
         if (monthBs < 1 || monthBs > 12) {
             throw new DateRangeNotSupported(
                     "Month " + monthBs + " is not valid. " +
                     "Nepali calendar months are numbered 1 to 12.");
         }
-        new AdBs().validateBsDate(yearBs, monthBs, dayBs);
+        if (yearBs < Lookup.START_YEAR || yearBs > Lookup.END_YEAR) {
+            throw new DateRangeNotSupported(
+                    "Nepali year " + yearBs + " is not supported. " +
+                    "Supported range is " + Lookup.START_YEAR + " to " + Lookup.END_YEAR + ".");
+        }
+        int maxDays = Lookup.monthDays[yearBs - Lookup.START_YEAR][monthBs - 1];
+        if (dayBs < 1 || dayBs > maxDays) {
+            throw new InvalidBsDayOfMonthException(String.format(
+                    "Day %d is not valid for month %d of Nepali year %d. " +
+                    "This month only has %d days.",
+                    dayBs, monthBs, yearBs, maxDays));
+        }
         return AdBs.toAdLocalDate(yearBs, monthBs, dayBs).format(AD_FORMATTER);
     }
 
@@ -74,6 +95,12 @@ public class NDC {
      * @return {@code true} if the date is valid
      */
     public boolean validateDate_bs(String bsDate, String field_name) {
+        if (field_name == null) field_name = "unknown field";
+        if (bsDate == null) {
+            throw new InvalidDateFormatException(
+                    "Invalid Nepali date for '" + field_name + "': null. " +
+                    "Please use the format YYYY/MM/DD (example: 2083/01/15).");
+        }
         if (!BS_PATTERN.matcher(bsDate).matches()) {
             throw new InvalidDateFormatException(
                     "Invalid Nepali date for '" + field_name + "': '" + bsDate + "'. " +
@@ -95,7 +122,7 @@ public class NDC {
                     "Nepali calendar months are numbered 1 to 12.");
         }
         int dayOfMonth = Lookup.monthDays[yearBs - Lookup.START_YEAR][monthBs - 1];
-        if (dayBs > dayOfMonth) {
+        if (dayBs < 1 || dayBs > dayOfMonth) {
             throw new InvalidBsDayOfMonthException(String.format(
                     "Day %d is not valid for month %d of Nepali year %d ('%s'). " +
                     "This month only has %d days.",
