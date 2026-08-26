@@ -76,27 +76,53 @@ mvn clean package
 
 ## Adding to Your Project
 
-### Maven
+### Maven (via JitPack — recommended)
 
-After running `mvn install`, add this to your project's `pom.xml`:
+This repository is public on GitHub, and releases are distributed through [JitPack](https://jitpack.io), which builds a Maven artifact directly from a tagged commit. No local build or manual jar install is needed — this works out of the box for anyone who clones a consuming project, including CI:
 
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>com.nepalidate</groupId>
-    <artifactId>adbs-core</artifactId>
-    <version>2.0.0</version>
+    <groupId>com.github.dhiraj-var</groupId>
+    <artifactId>adbs</artifactId>
+    <version>v2.0.0</version>
 </dependency>
 ```
 
-### Gradle
+Note that JitPack derives the coordinates from the GitHub org/repo name (`com.github.dhiraj-var:adbs`), not from this project's own internal Maven coordinates (`com.nepalidate:adbs-core`) — that's expected and normal for a JitPack-distributed artifact. The Java package names inside the jar are unaffected: it's still `com.nepalidate.ADBS.NepaliDateConverter.NDC`, etc.
+
+To release a new version, push a new git tag (e.g. `v2.0.1`) — JitPack builds it automatically on first request (usually 30–90 seconds for a cold build, then cached).
+
+### Gradle (via JitPack)
 
 ```groovy
-implementation 'com.nepalidate:adbs-core:2.0.0'
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.dhiraj-var:adbs:v2.0.0'
+}
 ```
 
-### Using on a Different Machine (No Maven Repository)
+### Building locally (offline, or no JitPack access)
 
-If you want to use the JAR on a machine that did not build it, copy the `adbs-core-2.0.0.jar` file to that machine and run:
+If you can't reach `jitpack.io` (e.g. an isolated network), you can still build and install the jar yourself, using its internal coordinates:
+
+```bash
+cd adbs-core
+mvn clean install
+```
+
+This installs `com.nepalidate:adbs-core:2.0.0` into your local `~/.m2` — add it to your `pom.xml` the same way as above, but with the internal `groupId`/`artifactId`/`version` instead of the JitPack coordinates.
+
+To use that locally-built jar on a different machine, copy `adbs-core-2.0.0.jar` over and run:
 
 ```bash
 mvn install:install-file \
@@ -106,8 +132,6 @@ mvn install:install-file \
   -Dversion=2.0.0 \
   -Dpackaging=jar
 ```
-
-After that, the `pom.xml` dependency above will work normally.
 
 ---
 
