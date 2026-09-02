@@ -1,6 +1,12 @@
-# adbs-core
+# adbs
+
+[![JitPack](https://jitpack.io/v/dhiraj-var/adbs.svg)](https://jitpack.io/#dhiraj-var/adbs)
+[![CI](https://github.com/dhiraj-var/adbs/actions/workflows/ci.yml/badge.svg)](https://github.com/dhiraj-var/adbs/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A fast, lightweight Java library for converting dates between the **English (Gregorian / AD)** calendar and the **Nepali (Bikram Sambat / BS)** calendar.
+
+As of v3.0.0 this is a two-module project: **`adbs-core`** (the converter itself, zero framework dependencies) and **`adbs-spring`** (optional Spring MVC bean wiring and a global exception handler). Most consumers only need `adbs-core`.
 
 ---
 
@@ -11,6 +17,7 @@ A fast, lightweight Java library for converting dates between the **English (Gre
 3. [Requirements](#requirements)
 4. [Building the JAR](#building-the-jar)
 5. [Adding to Your Project](#adding-to-your-project)
+   - [Migrating from v2.0.0](#migrating-from-v200)
 6. [How to Use](#how-to-use)
 7. [API Reference](#api-reference)
 8. [Error Handling](#error-handling)
@@ -26,9 +33,9 @@ A fast, lightweight Java library for converting dates between the **English (Gre
 
 Nepal uses the **Bikram Sambat (BS)** calendar, which runs roughly 56–57 years ahead of the Gregorian (AD) calendar. For example, today's English date **2026-05-22** is **2083/02/08** in the Nepali calendar.
 
-**adbs-core** solves the problem of converting between these two calendar systems. You give it an English date and it gives you the Nepali date, or vice versa. It is designed to be dropped into any Java or Spring project as a dependency — no server, no database, no network call needed. All the calendar data is bundled inside the JAR itself.
+**adbs** solves the problem of converting between these two calendar systems. You give it an English date and it gives you the Nepali date, or vice versa. It is designed to be dropped into any Java or Spring project as a dependency — no server, no database, no network call needed. All the calendar data is bundled inside the JAR itself.
 
-This library is the second version of the original `ADBS` project. It is a **drop-in replacement** — if you already use the original, you only need to swap the dependency. No code changes are required in your project.
+This library began as the second version of the original `ADBS` project and was a drop-in replacement for it. **v3.0.0 is a breaking release** — see [Migrating from v2.0.0](#migrating-from-v200) below before upgrading.
 
 ---
 
@@ -53,32 +60,38 @@ Dates outside this range will throw a `DateRangeNotSupported` exception with a c
 
 ## Building the JAR
 
-Clone or copy the `adbs-core` folder to your machine. Then run:
+Clone this repository. Then, from the repo root (the parent `pom.xml` builds both modules):
 
 ```bash
-cd adbs-core
 mvn clean install
 ```
 
 This will:
-1. Compile the source code
-2. Run all tests
-3. Package the JAR at `target/adbs-core-2.0.0.jar`
-4. Install the JAR into your local Maven repository (`~/.m2`) so other projects on the same machine can use it
+1. Compile both modules
+2. Run all tests, JaCoCo coverage, and SpotBugs static analysis (`mvn verify`, which `install` includes)
+3. Package `adbs-core/target/adbs-core-3.0.0.jar` and `adbs-spring/target/adbs-spring-3.0.0.jar`
+4. Install both JARs into your local Maven repository (`~/.m2`) so other projects on the same machine can use them
 
-**If you only want the JAR file without installing to local repo:**
+**If you only want the JAR files without installing to local repo:**
 ```bash
 mvn clean package
-# JAR is at: target/adbs-core-2.0.0.jar
+```
+
+**If you only need `adbs-core`** (no Spring integration), you can build just that module:
+```bash
+mvn -pl adbs-core -am clean install
 ```
 
 ---
 
 ## Adding to Your Project
 
-### Maven (via JitPack — recommended)
+This is now a multi-module repository, so JitPack publishes **one coordinate per module** rather than a single repo-wide coordinate. Pick the module(s) you actually need:
 
-This repository is public on GitHub, and releases are distributed through [JitPack](https://jitpack.io), which builds a Maven artifact directly from a tagged commit. No local build or manual jar install is needed — this works out of the box for anyone who clones a consuming project, including CI:
+- **`adbs-core`** — the converter itself. No Spring dependency. Use this unless you specifically need the Spring integration below.
+- **`adbs-spring`** — adds Spring bean wiring (`NdcConfiguration`) and a `@RestControllerAdvice` global exception handler for the three conversion exceptions. Depends on `adbs-core` transitively; requires Spring on your own classpath (`provided` scope — bring your own version).
+
+### Maven (via JitPack — recommended)
 
 ```xml
 <repositories>
@@ -88,16 +101,24 @@ This repository is public on GitHub, and releases are distributed through [JitPa
     </repository>
 </repositories>
 
+<!-- Core converter only -->
 <dependency>
-    <groupId>com.github.dhiraj-var</groupId>
-    <artifactId>adbs</artifactId>
-    <version>v2.0.0</version>
+    <groupId>com.github.dhiraj-var.adbs</groupId>
+    <artifactId>adbs-core</artifactId>
+    <version>v3.0.0</version>
+</dependency>
+
+<!-- Add this too if you want the Spring bean wiring / exception handler -->
+<dependency>
+    <groupId>com.github.dhiraj-var.adbs</groupId>
+    <artifactId>adbs-spring</artifactId>
+    <version>v3.0.0</version>
 </dependency>
 ```
 
-Note that JitPack derives the coordinates from the GitHub org/repo name (`com.github.dhiraj-var:adbs`), not from this project's own internal Maven coordinates (`com.nepalidate:adbs-core`) — that's expected and normal for a JitPack-distributed artifact. The Java package names inside the jar are unaffected: it's still `com.nepalidate.ADBS.NepaliDateConverter.NDC`, etc.
+Note the groupId has an extra segment (`com.github.dhiraj-var.adbs`, not `com.github.dhiraj-var`) — this is how JitPack names per-module coordinates for a multi-module repo, derived from the GitHub org + repo name, not from this project's own internal Maven coordinates (`com.nepalidate:adbs-core` / `com.nepalidate:adbs-spring`). The Java package names inside the jars are unaffected.
 
-To release a new version, push a new git tag (e.g. `v2.0.1`) — JitPack builds it automatically on first request (usually 30–90 seconds for a cold build, then cached).
+To release a new version, push a new git tag (e.g. `v3.0.1`) — JitPack builds it automatically on first request (usually 30–90 seconds for a cold build, then cached).
 
 ### Gradle (via JitPack)
 
@@ -107,39 +128,63 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.dhiraj-var:adbs:v2.0.0'
+    implementation 'com.github.dhiraj-var.adbs:adbs-core:v3.0.0'
+    implementation 'com.github.dhiraj-var.adbs:adbs-spring:v3.0.0' // optional
 }
 ```
 
 ### Building locally (offline, or no JitPack access)
 
-If you can't reach `jitpack.io` (e.g. an isolated network), you can still build and install the jar yourself, using its internal coordinates:
+If you can't reach `jitpack.io` (e.g. an isolated network), you can still build and install the jars yourself, using their internal coordinates:
 
 ```bash
-cd adbs-core
 mvn clean install
 ```
 
-This installs `com.nepalidate:adbs-core:2.0.0` into your local `~/.m2` — add it to your `pom.xml` the same way as above, but with the internal `groupId`/`artifactId`/`version` instead of the JitPack coordinates.
+This installs `com.nepalidate:adbs-core:3.0.0` and `com.nepalidate:adbs-spring:3.0.0` into your local `~/.m2` — add them to your `pom.xml` the same way as above, but with the internal `groupId`/`artifactId`/`version` instead of the JitPack coordinates.
 
-To use that locally-built jar on a different machine, copy `adbs-core-2.0.0.jar` over and run:
+To use a locally-built jar on a different machine, copy `adbs-core/target/adbs-core-3.0.0.jar` over and run:
 
 ```bash
 mvn install:install-file \
-  -Dfile=adbs-core-2.0.0.jar \
+  -Dfile=adbs-core-3.0.0.jar \
   -DgroupId=com.nepalidate \
   -DartifactId=adbs-core \
-  -Dversion=2.0.0 \
+  -Dversion=3.0.0 \
   -Dpackaging=jar
 ```
+
+### Migrating from v2.0.0
+
+v3.0.0 is a breaking release. Before upgrading:
+
+1. **`NDC` is no longer a Spring bean by default.** Component-scan-based `@Autowired NDC` will fail at Spring context startup, silently (no compile error) until you fix it. Add the `adbs-spring` dependency and either `@Import(com.nepalidate.ADBS.spring.NdcConfiguration.class)` on a configuration class, or add `com.nepalidate.ADBS.spring` to your component-scan base packages.
+2. **`ExceptionHandling` / `ErrResponse` moved to `adbs-spring`.** If you use these classes (or rely on the global exception handler being auto-registered via component scanning), add the `adbs-spring` dependency.
+3. **Watch the old-style JitPack coordinate.** `com.github.dhiraj-var:adbs:v3.0.0` (without the module name) still resolves — JitPack auto-generates an aggregator for multi-module repos — but it depends on *all* submodules, so it silently pulls Spring back in even if you only wanted `adbs-core`. Use the per-module coordinates above instead.
+4. If you call `AdBs.convertAdToBs(String)` directly and have `catch (java.text.ParseException e)` around it, remove that catch block — the method no longer declares that checked exception (it never actually threw it).
+
+See [CHANGELOG.md](CHANGELOG.md) for the complete list of changes.
 
 ---
 
 ## How to Use
 
-The main class you will use is `NDC` (Nepali Date Converter). If your project uses Spring, it is registered as a `@Component` and can be injected anywhere.
+The main class you will use is `NDC` (Nepali Date Converter). It has no Spring dependency, so plain Java usage requires nothing extra. For Spring, add the `adbs-spring` dependency and import its configuration to get `NDC` as a bean.
 
-### In a Spring project (recommended)
+### In a Spring project (with the `adbs-spring` dependency added)
+
+```java
+import com.nepalidate.ADBS.spring.NdcConfiguration;
+import org.springframework.context.annotation.Import;
+
+@Import(NdcConfiguration.class)
+@SpringBootApplication
+public class YourApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(YourApplication.class, args);
+    }
+}
+```
 
 ```java
 import com.nepalidate.ADBS.NepaliDateConverter.NDC;
@@ -166,16 +211,7 @@ public class MyService {
 }
 ```
 
-Make sure Spring can find the `NDC` class. If your application does not already scan the `com.nepalidate` package, add it to your Spring Boot application class:
-
-```java
-@SpringBootApplication(scanBasePackages = {"com.yourpackage", "com.nepalidate"})
-public class YourApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(YourApplication.class, args);
-    }
-}
-```
+Alternatively, component-scan `com.nepalidate.ADBS.spring` instead of using `@Import`, if you prefer scanning over explicit imports.
 
 ### Without Spring (plain Java)
 
@@ -283,6 +319,7 @@ The three exception types are:
 | `InvalidDateFormatException` | The date string is in the wrong format or contains non-numeric characters |
 | `DateRangeNotSupported` | The year or month is outside the valid range |
 | `InvalidBsDayOfMonthException` | The day number is higher than the days in that particular month |
+| `CalendarDataUnavailableException` | The bundled calendar data itself couldn't be loaded or is internally inconsistent — a packaging/data problem, not a bad input; you should not normally see this unless the CSV was hand-edited incorrectly |
 
 All are in the package `com.nepalidate.ADBS.NepaliDateConverter`.
 
@@ -304,9 +341,9 @@ try {
 }
 ```
 
-### With Spring's global exception handler
+### With Spring's global exception handler (`adbs-spring`)
 
-The library includes a `@RestControllerAdvice` class (`ExceptionHandling`) that automatically catches all three exceptions and returns a JSON `400 Bad Request` response. If your project already has its own global exception handler, the library's handler will not interfere — Spring uses the most specific handler available.
+If you've added the `adbs-spring` dependency, it includes a `@RestControllerAdvice` class (`ExceptionHandling`) that automatically catches all three exceptions and returns a JSON `400 Bad Request` response, as long as it's on your component-scan path. If your project already has its own global exception handler, the library's handler will not interfere — Spring uses the most specific handler available.
 
 ### Example error messages
 
@@ -331,7 +368,7 @@ English date 1900-01-01 is before the supported range. Dates from April 13, 1913
 All calendar data lives in one file:
 
 ```
-src/main/resources/nepali_dates.csv
+adbs-core/src/main/resources/nepali_dates.csv
 ```
 
 Each line represents one Nepali year:
@@ -363,8 +400,11 @@ Find the line for that year, update the number in the relevant column, then rebu
 - Lines starting with `#` are comments and are ignored
 - Blank lines are ignored
 - Line order does not matter — the library indexes data by year number, not by position in the file
-- All years from 1970 to 2100 must be present; the library will refuse to start if any year is missing
+- All years from 1970 to 2100 must be present
 - The typical number of days per Nepali month is 29–32
+- Each year's 12 month-day-counts must sum to exactly the number of days between that year's new-year date and the next year's new-year date — this is validated at load time
+- Any of these problems throws `CalendarDataUnavailableException` with a message naming the specific bad row, on first use of the library (not at class-load time — a bad CSV no longer poisons the JVM permanently, so fixing it and re-running works without a restart)
+- **Known data caveat:** for BS 1972 and BS 1974, the correct yearly total is well-corroborated across independent sources, but the exact per-month breakdown isn't — the current file places the extra day in Chaitra (month 12) as a best-effort, unverified choice. See `CHANGELOG.md`'s v3.0.0 entry for details if you have an authoritative source for these two years.
 
 ---
 
@@ -372,12 +412,12 @@ Find the line for that year, update the number in the relevant column, then rebu
 
 ### ✅ Where it can be used
 
-- **Any Java 17+ project** — Spring Boot, plain Java, Jakarta EE, Micronaut, Quarkus, etc.
-- **Spring Boot 2.x and 3.x** — the library's Spring annotations (`@Component`, `@RestControllerAdvice`) are compatible with both versions
+- **Any Java 17+ project** — Spring Boot, plain Java, Jakarta EE, Micronaut, Quarkus, etc. — via `adbs-core` alone
+- **Spring Boot 2.x and 3.x** — via the additional `adbs-spring` module (`NdcConfiguration`, `@RestControllerAdvice`); compatible with both versions
 - **Backend services and APIs** — for storing, displaying, or accepting Nepali dates
 - **Form validation** — use `validateDate_bs()` to validate user-submitted Nepali dates with a clear field-level error message
 - **Batch processing** — converting large numbers of dates is fast; no external calls are made
-- **Libraries and SDKs** — because the JAR has no mandatory runtime dependencies (Spring is optional), it can safely be embedded in other libraries without forcing Spring on downstream consumers
+- **Libraries and SDKs** — `adbs-core` has zero mandatory runtime dependencies (not even Spring, optionally or otherwise), so it can safely be embedded in other libraries without forcing anything onto downstream consumers
 
 ### ❌ Where it cannot be used
 
@@ -398,7 +438,7 @@ The library is optimised for high-throughput use:
 - **No external calls** — all data is loaded from the bundled CSV at startup; conversions are pure in-memory computation
 - **O(1) year lookup** — year data is stored in a plain array indexed by `bsYear - 1970`; no HashMap lookups or linear searches
 - **O(1–2) AD→BS year estimation** — uses the known offset (~57 years between calendars) to jump directly to the right year instead of scanning all 131 years
-- **Thread-safe** — `Pattern` and `DateTimeFormatter` instances are `static final`; the `NDC` bean can safely be shared across threads in a Spring singleton
+- **Thread-safe** — `Pattern` and `DateTimeFormatter` instances are `static final`; the `NDC` bean can safely be shared across threads in a Spring singleton (verified under concurrent load by `ThreadSafetyTest`)
 - **No object allocation on hot path** — no `new Date()`, no `SimpleDateFormat`, no `Calendar` created during conversion
 
 The JAR itself is **14 KB** with no mandatory transitive dependencies.
@@ -417,14 +457,5 @@ See the [LICENSE](LICENSE) file for the full license text.
 
 ## Version History
 
-### 2.0.0 (current)
-- Complete rewrite for performance: O(1) data access, +57-estimation algorithm for AD→BS
-- Calendar data moved from Java source code to `nepali_dates.csv` — easy to update without code changes
-- All error messages rewritten in plain language with examples and valid ranges
-- Removed Spring Boot dependency; JAR is now 14 KB instead of 17 MB
-- Java 17
-- Backward compatible with the 1.0.0 API — same class names, same method signatures, same packages
-
-### 1.0.0
-- Initial release (Spring Boot 2.6.3, Java 11)
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 - Supported BS 1970–2100

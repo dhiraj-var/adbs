@@ -1,0 +1,31 @@
+name: Release version check
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Verify pom version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          POM_VERSION=$(mvn -q -N org.apache.maven.plugins:maven-help-plugin:3.4.0:evaluate -Dexpression=project.version -DforceStdout)
+          echo "Tag version: $TAG_VERSION"
+          echo "POM version: $POM_VERSION"
+          if [ "$TAG_VERSION" != "$POM_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match parent pom version $POM_VERSION"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: mvn -B test

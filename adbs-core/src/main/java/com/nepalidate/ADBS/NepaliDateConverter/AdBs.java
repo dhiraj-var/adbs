@@ -1,6 +1,5 @@
 package com.nepalidate.ADBS.NepaliDateConverter;
 
-import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -46,11 +45,8 @@ public class AdBs {
     /**
      * Converts an AD date string (format {@code dd-MM-yyyy}) to a BS date string
      * ({@code bsYear-bsMonth-bsDay}, no zero-padding).
-     *
-     * <p>Note: {@code ParseException} is declared for backward compatibility only;
-     * this method does not actually throw it.
      */
-    public String convertAdToBs(String adDate) throws ParseException {
+    public String convertAdToBs(String adDate) {
         if (adDate == null) {
             throw new InvalidDateFormatException(
                     "Invalid date: null. Expected format dd-MM-yyyy (example: 14-04-2026).");
@@ -85,7 +81,7 @@ public class AdBs {
                     "Month " + bsMonth + " is not valid. " +
                     "Nepali calendar months are numbered 1 to 12.");
         }
-        int maxDays = Lookup.monthDays[bsYear - Lookup.START_YEAR][bsMonth - 1];
+        int maxDays = Lookup.monthDayCount(bsYear - Lookup.START_YEAR, bsMonth - 1);
         if (bsDayOfMonth < 1 || bsDayOfMonth > maxDays) {
             throw new InvalidBsDayOfMonthException(String.format(
                     "Day %d is not valid for month %d of Nepali year %d. " +
@@ -105,9 +101,9 @@ public class AdBs {
         int idx = bsYear - Lookup.START_YEAR;
         int dayOffset = bsDayOfMonth - 1;
         for (int m = 0; m < bsMonth - 1; m++) {
-            dayOffset += Lookup.monthDays[idx][m];
+            dayOffset += Lookup.monthDayCount(idx, m);
         }
-        return Lookup.newYearDates[idx].plusDays(dayOffset);
+        return Lookup.newYearDate(idx).plusDays(dayOffset);
     }
 
     /**
@@ -115,7 +111,7 @@ public class AdBs {
      * Uses the +57 estimation to find the BS year in O(1–2) steps.
      */
     static int[] toBsComponents(LocalDate adDate) {
-        if (adDate.isBefore(Lookup.newYearDates[0])) {
+        if (adDate.isBefore(Lookup.newYearDate(0))) {
             throw new DateRangeNotSupported(
                     "English date " + adDate + " is before the supported range. " +
                     "Dates from April 13, 1913 onwards are supported.");
@@ -125,17 +121,17 @@ public class AdBs {
         int idx = adDate.getYear() + 56 - Lookup.START_YEAR;
         idx = Math.max(0, Math.min(idx, Lookup.YEAR_COUNT - 2));
 
-        while (idx < Lookup.YEAR_COUNT - 1 && !adDate.isBefore(Lookup.newYearDates[idx + 1])) {
+        while (idx < Lookup.YEAR_COUNT - 1 && !adDate.isBefore(Lookup.newYearDate(idx + 1))) {
             idx++;
         }
-        while (idx > 0 && adDate.isBefore(Lookup.newYearDates[idx])) {
+        while (idx > 0 && adDate.isBefore(Lookup.newYearDate(idx))) {
             idx--;
         }
 
-        long dayOffset = ChronoUnit.DAYS.between(Lookup.newYearDates[idx], adDate);
+        long dayOffset = ChronoUnit.DAYS.between(Lookup.newYearDate(idx), adDate);
         int bsMonth = 0;
-        while (bsMonth < 12 && dayOffset >= Lookup.monthDays[idx][bsMonth]) {
-            dayOffset -= Lookup.monthDays[idx][bsMonth];
+        while (bsMonth < 12 && dayOffset >= Lookup.monthDayCount(idx, bsMonth)) {
+            dayOffset -= Lookup.monthDayCount(idx, bsMonth);
             bsMonth++;
         }
 
