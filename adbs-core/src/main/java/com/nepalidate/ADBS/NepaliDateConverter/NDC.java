@@ -1,7 +1,5 @@
 package com.nepalidate.ADBS.NepaliDateConverter;
 
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -11,7 +9,6 @@ import java.util.regex.Pattern;
  * Public API for AD ↔ BS conversion. Drop-in replacement for the original NDC.
  * Same method signatures, same input/output formats, same exceptions.
  */
-@Component
 public class NDC {
 
     private static final Pattern AD_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
@@ -77,7 +74,7 @@ public class NDC {
                     "Nepali year " + yearBs + " is not supported. " +
                     "Supported range is " + Lookup.START_YEAR + " to " + Lookup.END_YEAR + ".");
         }
-        int maxDays = Lookup.monthDays[yearBs - Lookup.START_YEAR][monthBs - 1];
+        int maxDays = Lookup.monthDayCount(yearBs - Lookup.START_YEAR, monthBs - 1);
         if (dayBs < 1 || dayBs > maxDays) {
             throw new InvalidBsDayOfMonthException(String.format(
                     "Day %d is not valid for month %d of Nepali year %d. " +
@@ -121,7 +118,7 @@ public class NDC {
                     "Month " + monthBs + " is not valid for '" + field_name + "'. " +
                     "Nepali calendar months are numbered 1 to 12.");
         }
-        int dayOfMonth = Lookup.monthDays[yearBs - Lookup.START_YEAR][monthBs - 1];
+        int dayOfMonth = Lookup.monthDayCount(yearBs - Lookup.START_YEAR, monthBs - 1);
         if (dayBs < 1 || dayBs > dayOfMonth) {
             throw new InvalidBsDayOfMonthException(String.format(
                     "Day %d is not valid for month %d of Nepali year %d ('%s'). " +
