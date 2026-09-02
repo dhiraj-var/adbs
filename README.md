@@ -18,6 +18,7 @@ As of v3.0.0 this is a two-module project: **`adbs-core`** (the converter itself
 4. [Building the JAR](#building-the-jar)
 5. [Adding to Your Project](#adding-to-your-project)
    - [Migrating from v2.0.0](#migrating-from-v200)
+   - [Migrating from v3.0.0](#migrating-from-v300)
 6. [How to Use](#how-to-use)
 7. [API Reference](#api-reference)
 8. [Error Handling](#error-handling)
@@ -35,7 +36,7 @@ Nepal uses the **Bikram Sambat (BS)** calendar, which runs roughly 56–57 years
 
 **adbs** solves the problem of converting between these two calendar systems. You give it an English date and it gives you the Nepali date, or vice versa. It is designed to be dropped into any Java or Spring project as a dependency — no server, no database, no network call needed. All the calendar data is bundled inside the JAR itself.
 
-This library began as the second version of the original `ADBS` project and was a drop-in replacement for it. **v3.0.0 is a breaking release** — see [Migrating from v2.0.0](#migrating-from-v200) below before upgrading.
+This library began as the second version of the original `ADBS` project and was a drop-in replacement for it. **v3.0.0 and v4.0.0 are both breaking releases** — see [Migrating from v2.0.0](#migrating-from-v200) and [Migrating from v3.0.0](#migrating-from-v300) below before upgrading.
 
 ---
 
@@ -69,7 +70,7 @@ mvn clean install
 This will:
 1. Compile both modules
 2. Run all tests, JaCoCo coverage, and SpotBugs static analysis (`mvn verify`, which `install` includes)
-3. Package `adbs-core/target/adbs-core-3.0.0.jar` and `adbs-spring/target/adbs-spring-3.0.0.jar`
+3. Package `adbs-core/target/adbs-core-4.0.0.jar` and `adbs-spring/target/adbs-spring-4.0.0.jar`
 4. Install both JARs into your local Maven repository (`~/.m2`) so other projects on the same machine can use them
 
 **If you only want the JAR files without installing to local repo:**
@@ -105,20 +106,20 @@ This is now a multi-module repository, so JitPack publishes **one coordinate per
 <dependency>
     <groupId>com.github.dhiraj-var.adbs</groupId>
     <artifactId>adbs-core</artifactId>
-    <version>v3.0.0</version>
+    <version>v4.0.0</version>
 </dependency>
 
 <!-- Add this too if you want the Spring bean wiring / exception handler -->
 <dependency>
     <groupId>com.github.dhiraj-var.adbs</groupId>
     <artifactId>adbs-spring</artifactId>
-    <version>v3.0.0</version>
+    <version>v4.0.0</version>
 </dependency>
 ```
 
 Note the groupId has an extra segment (`com.github.dhiraj-var.adbs`, not `com.github.dhiraj-var`) — this is how JitPack names per-module coordinates for a multi-module repo, derived from the GitHub org + repo name, not from this project's own internal Maven coordinates (`com.nepalidate:adbs-core` / `com.nepalidate:adbs-spring`). The Java package names inside the jars are unaffected.
 
-To release a new version, push a new git tag (e.g. `v3.0.1`) — JitPack builds it automatically on first request (usually 30–90 seconds for a cold build, then cached).
+To release a new version, push a new git tag (e.g. `v4.0.1`) — JitPack builds it automatically on first request (usually 30–90 seconds for a cold build, then cached).
 
 ### Gradle (via JitPack)
 
@@ -128,8 +129,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.dhiraj-var.adbs:adbs-core:v3.0.0'
-    implementation 'com.github.dhiraj-var.adbs:adbs-spring:v3.0.0' // optional
+    implementation 'com.github.dhiraj-var.adbs:adbs-core:v4.0.0'
+    implementation 'com.github.dhiraj-var.adbs:adbs-spring:v4.0.0' // optional
 }
 ```
 
@@ -141,16 +142,16 @@ If you can't reach `jitpack.io` (e.g. an isolated network), you can still build 
 mvn clean install
 ```
 
-This installs `com.nepalidate:adbs-core:3.0.0` and `com.nepalidate:adbs-spring:3.0.0` into your local `~/.m2` — add them to your `pom.xml` the same way as above, but with the internal `groupId`/`artifactId`/`version` instead of the JitPack coordinates.
+This installs `com.nepalidate:adbs-core:4.0.0` and `com.nepalidate:adbs-spring:4.0.0` into your local `~/.m2` — add them to your `pom.xml` the same way as above, but with the internal `groupId`/`artifactId`/`version` instead of the JitPack coordinates.
 
-To use a locally-built jar on a different machine, copy `adbs-core/target/adbs-core-3.0.0.jar` over and run:
+To use a locally-built jar on a different machine, copy `adbs-core/target/adbs-core-4.0.0.jar` over and run:
 
 ```bash
 mvn install:install-file \
-  -Dfile=adbs-core-3.0.0.jar \
+  -Dfile=adbs-core-4.0.0.jar \
   -DgroupId=com.nepalidate \
   -DartifactId=adbs-core \
-  -Dversion=3.0.0 \
+  -Dversion=4.0.0 \
   -Dpackaging=jar
 ```
 
@@ -162,6 +163,27 @@ v3.0.0 is a breaking release. Before upgrading:
 2. **`ExceptionHandling` / `ErrResponse` moved to `adbs-spring`.** If you use these classes (or rely on the global exception handler being auto-registered via component scanning), add the `adbs-spring` dependency.
 3. **Watch the old-style JitPack coordinate.** `com.github.dhiraj-var:adbs:v3.0.0` (without the module name) still resolves — JitPack auto-generates an aggregator for multi-module repos — but it depends on *all* submodules, so it silently pulls Spring back in even if you only wanted `adbs-core`. Use the per-module coordinates above instead.
 4. If you call `AdBs.convertAdToBs(String)` directly and have `catch (java.text.ParseException e)` around it, remove that catch block — the method no longer declares that checked exception (it never actually threw it).
+
+See [CHANGELOG.md](CHANGELOG.md) for the complete list of changes.
+
+### Migrating from v3.0.0
+
+v4.0.0 is also a breaking release — it replaces `adbs-spring`'s bespoke error response with an [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) "Problem Details" shape. Before upgrading:
+
+1. **`ErrResponse` is gone, replaced by `ProblemDetail`** (same package, `com.nepalidate.ADBS.ExceptionHandling`). Field mapping:
+
+   | Old (`ErrResponse`) | New (`ProblemDetail`) | Notes |
+   |---|---|---|
+   | `statusCode` | `status` | Same meaning |
+   | `timestamp` (`java.util.Date`) | `timestamp` (`java.time.Instant`) | Type changed |
+   | `message` | `detail` | Same content |
+   | `description` | `instance` | The `uri=` prefix is now stripped |
+   | *(none)* | `type` | New — a `urn:adbs:problem:...` identifier per error type |
+   | *(none)* | `errorCode` | New — a stable machine-readable code, also available without Spring via `getErrorCode()` on the exception itself |
+
+2. **Response media type changed** from `application/json` to `application/problem+json`. If you have a hardcoded `Accept`/content-type check on the client side, update it.
+3. **Status codes changed for two exceptions**: `DateRangeNotSupported` and `InvalidBsDayOfMonthException` now return `422 Unprocessable Entity` instead of `400 Bad Request` (they represent well-formed input with a semantically invalid value, not a malformed request — see the [Response shape](#response-shape-rfc-7807) table). Update any client logic branching on the exact status code for these two.
+4. **`CalendarDataUnavailableException` is now actually handled.** Previously it silently fell through to Spring's default whitelabel/blank error response (a bug); it now returns a structured `500 Internal Server Error` `ProblemDetail` body like everything else.
 
 See [CHANGELOG.md](CHANGELOG.md) for the complete list of changes.
 
@@ -312,7 +334,7 @@ ndc.validateDate_bs("2101/01/01", "endDate")      // year 2101 is beyond support
 
 All exceptions extend `RuntimeException`, so you do not need to declare them in method signatures. They will bubble up to your global exception handler automatically.
 
-The three exception types are:
+The four exception types are:
 
 | Exception | When it is thrown |
 |---|---|
@@ -343,7 +365,37 @@ try {
 
 ### With Spring's global exception handler (`adbs-spring`)
 
-If you've added the `adbs-spring` dependency, it includes a `@RestControllerAdvice` class (`ExceptionHandling`) that automatically catches all three exceptions and returns a JSON `400 Bad Request` response, as long as it's on your component-scan path. If your project already has its own global exception handler, the library's handler will not interfere — Spring uses the most specific handler available.
+If you've added the `adbs-spring` dependency, it includes a `@RestControllerAdvice` class (`ExceptionHandling`) that automatically catches all four of the library's exceptions — plus the JDK's `java.time.DateTimeException`, as a defensive case — and returns an [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) `application/problem+json` response, as long as it's on your component-scan path. If your project already has its own global exception handler, the library's handler will not interfere — Spring uses the most specific handler available.
+
+#### Response shape (RFC 7807)
+
+The response body follows the RFC 7807 "Problem Details for HTTP APIs" standard, plus one extension member (`errorCode`) for callers who want to branch on a stable machine-readable code instead of parsing `detail` text:
+
+```json
+{
+  "type": "urn:adbs:problem:invalid-bs-day-of-month",
+  "title": "Invalid Bikram Sambat Day Of Month",
+  "status": 422,
+  "detail": "Day 32 is not valid for month 1 of Nepali year 2083. This month only has 31 days.",
+  "instance": "/api/dates/convert",
+  "errorCode": "INVALID_BS_DAY_OF_MONTH",
+  "timestamp": "2026-09-02T10:15:30.123Z"
+}
+```
+
+| Exception | HTTP status | `errorCode` | `type` |
+|---|---|---|---|
+| `InvalidDateFormatException` | 400 Bad Request | `INVALID_DATE_FORMAT` | `urn:adbs:problem:invalid-date-format` |
+| `DateRangeNotSupported` | 422 Unprocessable Entity | `DATE_RANGE_NOT_SUPPORTED` | `urn:adbs:problem:date-range-not-supported` |
+| `InvalidBsDayOfMonthException` | 422 Unprocessable Entity | `INVALID_BS_DAY_OF_MONTH` | `urn:adbs:problem:invalid-bs-day-of-month` |
+| `java.time.DateTimeException` | 400 Bad Request | `INVALID_DATE_FORMAT` | `urn:adbs:problem:invalid-date-format` |
+| `CalendarDataUnavailableException` | 500 Internal Server Error | `CALENDAR_DATA_UNAVAILABLE` | `urn:adbs:problem:calendar-data-unavailable` |
+
+400 is used for input that couldn't even be parsed into a candidate date (wrong format); 422 is used for input that parsed fine but is semantically out of range (unsupported year/month, or a day that doesn't exist in that month); 500 is used for `CalendarDataUnavailableException` specifically, since that's a server-side data defect, not a mistake in the request — retrying the same request won't help until the underlying data is fixed.
+
+`errorCode` is also available without Spring: all four of the library's own exception classes expose a `getErrorCode()` method directly, so plain-Java (`adbs-core`-only) consumers get the same stable code without needing `adbs-spring`.
+
+`timestamp` is a `java.time.Instant`, serialized as an ISO-8601 string. This requires Jackson's `jackson-datatype-jsr310` module to be registered, and `SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` to be disabled — Spring Boot's web starter configures both automatically; a plain Spring Framework app without Boot needs to configure both itself, or `timestamp` will serialize as a numeric epoch value instead.
 
 ### Example error messages
 

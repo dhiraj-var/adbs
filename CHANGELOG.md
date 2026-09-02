@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-02
+
+### Added
+- `ProblemDetail` — an [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) "Problem Details for HTTP APIs" response class (`type`, `title`, `status`, `detail`, `instance`, plus an `errorCode` extension member and a `timestamp`), replacing the bespoke `ErrResponse`.
+- `getErrorCode()` on all 4 `adbs-core` exception classes (`InvalidDateFormatException`, `DateRangeNotSupported`, `InvalidBsDayOfMonthException`, `CalendarDataUnavailableException`) — a stable, machine-readable code available even to plain-Java consumers who don't use `adbs-spring`.
+- `@ExceptionHandler(CalendarDataUnavailableException.class)` in `ExceptionHandling` — see Fixed below.
+- `ExceptionHandlingTest` and `ProblemDetailJacksonTest` — `adbs-spring`'s first tests, covering HTTP status routing, `application/problem+json` content type, every response field, and real Jackson serialization shape.
+- Test-scope dependencies in `adbs-spring`: `spring-test`, `javax.servlet-api` (needed for `MockHttpServletRequest`), `jackson-datatype-jsr310` (needed to verify `Instant` serialization).
+
+### Fixed
+- `CalendarDataUnavailableException` was previously **unhandled** by `ExceptionHandling` — despite being documented in the README's exception table, it silently fell through to Spring's default whitelabel/blank error response instead of a structured JSON body. It now returns a proper `500 Internal Server Error` `ProblemDetail`.
+- README's Error Handling section said "the three exception types" directly above a four-row table; fixed to "four."
+
+### Changed (breaking)
+- **`ErrResponse` removed, replaced by `ProblemDetail`.** Different Java type, different JSON shape (RFC 7807 field names instead of `statusCode`/`timestamp`/`message`/`description`), `timestamp` type changed from `java.util.Date` to `java.time.Instant`. See the README's "Migrating from v3.0.0" section for the full field mapping.
+- **Response media type changed** from `application/json` to `application/problem+json`.
+- **`DateRangeNotSupported` and `InvalidBsDayOfMonthException` now return `422 Unprocessable Entity`** instead of `400 Bad Request` — they represent well-formed input with a semantically invalid value (out-of-range year/month, or an impossible day-of-month), not a malformed request. `InvalidDateFormatException` and `java.time.DateTimeException` stay at `400 Bad Request`.
+
 ## [3.0.0] - 2026-09-02
 
 ### Added

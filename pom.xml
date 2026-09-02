@@ -6,7 +6,7 @@
 
     <groupId>com.nepalidate</groupId>
     <artifactId>adbs-parent</artifactId>
-    <version>3.0.0</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
     <name>adbs-parent</name>
     <description>High-performance Nepali (Bikram Sambat) to English (AD) date conversion library — parent aggregator</description>
